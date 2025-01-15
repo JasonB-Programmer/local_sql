@@ -1,0 +1,71 @@
+//to read data from a table of SQL Server
+
+
+use futures_util::stream::TryStreamExt;
+use tiberius::QueryItem;
+
+
+async fn read_table() -> anyhow::Result<()> {
+
+    let config = Config::from_ado_string(&CONN_STR_PORT)?;
+    let tcp = TcpStream::connect(config.get_addr()).await?;
+    tcp.set_nodelay(true)?;
+
+    let mut client = Client::connect(config, tcp).await?;
+    let select = Query::new("SELECT * from HumanResources.Department");
+    let mut stream=select.query(&mut client).await?;
+
+
+    //Read each row as long as ther arrive from the stream
+
+    while let Some(row)=stream.try_next().await? {
+        
+        match row {
+
+            // Metadata of the result set
+            QueryItem::Metadata(meta) => {
+                println!("{:?}",meta);
+            },
+
+            // Actual data rows
+            QueryItem::Row(r) => {
+                
+                // Break line to separate each row
+                println!();
+
+                // Create variables with an explicit type annotation.
+                let date_column: Option<chrono::NaiveDate> = None;//r.get(2);
+                let name_column: Option<&str> =r.get(1);
+                let id_column: Option<i32> =r.get(0);
+                
+                // The complete list of SQL Server data types
+                // matching with Rust data types can be found in:
+                // https://docs.rs/tiberius/latest/tiberius/trait.FromSql.html#tymethod.from_sql
+
+
+                // Print an INT column
+                if let Some(value) = id_column {
+                    println!("{:?}", value);
+                }else{
+                    println!("NULL");
+                }
+                
+                // Print an VARCHAR column
+                if let Some(value) =name_column {
+                    println!("{:?}", value);
+                }else{
+                    println!("NULL");
+                }
+                
+                // Print a DATE column
+                if let Some(value) = date_column {
+                    println!("{:?}", value);
+                }else{
+                    println!("NULL");
+                }
+            },
+        }
+    }
+
+    Ok(())
+}
