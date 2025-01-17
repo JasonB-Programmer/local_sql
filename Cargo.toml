@@ -23,3 +23,7 @@ clap = "3.0"
 [[bin]]
 name = "cargo-box"
 path = "src/bin/cargo-box.rs"
+
+[[bin]]
+name = "cargo-readtable"
+path = "src/bin/cargo-readtable.rs"

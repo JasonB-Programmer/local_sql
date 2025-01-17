@@ -1,6 +1,6 @@
 use anyhow::Ok;
 use async_std::net::TcpStream;
-use chrono::{NaiveDate, NaiveDateTime};
+
 use tiberius::{Client, Config};
 use tiberius::SqlBrowser;
 use once_cell::sync::Lazy;
@@ -200,7 +200,7 @@ pub async fn read_table() -> anyhow::Result<()> {
     tcp.set_nodelay(true)?;
 
     let mut client = Client::connect(config, tcp).await?;
-    let select = Query::new("select * from HumanResources.Department where DepartmentID > 3");
+    let select = Query::new("select * from HumanResources.Department");
     let mut stream=select.query(&mut client).await?;
  
 

@@ -1,4 +1,4 @@
-mod sql_client;
+pub mod sql_client;
 
 
 #[cfg(test)]

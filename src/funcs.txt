@@ -1,3 +1,15 @@
+//creating a sql query
+let select = Query::new("
+    drop table if exists dbo.rabbit_births
+    create table dbo.rabbit_births
+    (
+        id int,
+        name varchar(max),
+        date_of_birth datetime
+    )
+    ");
+
+
 //to read data from a table of SQL Server
 
 
