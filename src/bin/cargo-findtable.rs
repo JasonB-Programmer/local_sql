@@ -8,9 +8,9 @@ async fn main() -> anyhow::Result<()> {
     
     // Run the async function in the runtime
     runtime.block_on(async {
-        match sc::read_table().await {
+        match sc::find_table_all().await {
             Ok(_) => {
-                println!("Successfully read table data!");
+                println!("Successfully found table data!");
             },
             Err(e) => {
                 eprintln!("Error reading table: {}", e);
@@ -27,21 +27,20 @@ async fn main() -> anyhow::Result<()> {
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
         
-         // Check if the input is just a newline character
-         if input.trim().is_empty() {
+        // Check if the input is just a newline character
+        if input.trim().is_empty() {
             #[cfg(target_os = "windows")]
             {
-                break;
+                std::process::exit(0);
             }
 
             #[cfg(any(target_os = "linux", target_os = "macos"))]
             {
-                break;
+                std::process::exit(0);
             }
         } else {
             println!("Please press Enter to close...");
             io::stdout().flush()?;
         }
     }
-    Ok(())
 }

@@ -7,14 +7,12 @@ use once_cell::sync::Lazy;
 use std::env;
 
 
-#[allow(dead_code)]
 static CONN_STR_PORT: Lazy<String> = Lazy::new(|| {
     env::var("TIBERIUS_TEST_CONNECTION_STRING").unwrap_or_else(|_| {
         "server=JASON\\SQLEXPRESS,61521;database=AdventureWorks2016_EXT;IntegratedSecurity=true;TrustServerCertificate=true".to_owned()
     })
 });
 
-#[allow(dead_code)]
 /// Connect to an SQL Server instance using the hostname and port number.
 pub async fn connect_through_port() -> anyhow::Result<()> {
 
@@ -264,6 +262,69 @@ pub async fn read_table() -> anyhow::Result<()> {
         }
     }
 
+    Ok(())
+}
+
+pub async fn create_view(view_name: &str, query: &str) -> anyhow::Result<()> {
+    let config = Config::from_ado_string(&CONN_STR_PORT)?;
+    let tcp = TcpStream::connect(config.get_addr()).await?;
+    tcp.set_nodelay(true)?;
+
+    let mut client = Client::connect(config, tcp).await?;
+
+    // Construct the CREATE VIEW statement
+    let create_view_sql = format!(
+        "CREATE OR ALTER VIEW {} AS {}",
+        view_name,
+        query
+    );
+
+    // Execute the CREATE VIEW statement
+    let _result = client.execute(&create_view_sql, &[]).await?;
+
+    println!("View '{}' created successfully", view_name);
+    
+    client.close().await?;
+    Ok(())
+}
+
+pub async fn find_table_all() -> anyhow::Result<()> {
+    let config = Config::from_ado_string(&CONN_STR_PORT)?;
+    let tcp = TcpStream::connect(config.get_addr()).await?;
+    tcp.set_nodelay(true)?;
+
+    let mut client = Client::connect(config, tcp).await?;
+    let select = Query::new("SELECT 
+                            TABLE_SCHEMA,
+                            TABLE_NAME,
+                            TABLE_TYPE
+                            FROM INFORMATION_SCHEMA.TABLES
+                            WHERE TABLE_TYPE = 'BASE TABLE'
+                            ORDER BY TABLE_SCHEMA, TABLE_NAME;");
+    let mut stream = select.query(&mut client).await?;
+
+    while let Some(row) = stream.try_next().await? {
+        match row {
+            QueryItem::Metadata(meta) => {
+                println!("Metadata: {:?}", meta);
+            },
+            QueryItem::Row(r) => {
+                // Get values from each column
+                let schema: Option<&str> = r.get(0);
+                let table_name: Option<&str> = r.get(1);
+                let table_type: Option<&str> = r.get(2);
+
+                // Print the values
+                println!("Schema: {}, Table: {}, Type: {}", 
+                    schema.unwrap_or("NULL"),
+                    table_name.unwrap_or("NULL"),
+                    table_type.unwrap_or("NULL")
+                );
+            }
+        }
+    }
+
+    
     Ok(())
 }
 
